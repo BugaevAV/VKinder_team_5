@@ -67,10 +67,14 @@ class VK_data:
             'extended': 1,
             'photo_sizes': 1
         }
-        photos_json = requests.get(self.photos_get_url,
-                                   params={**self.params, **json_params}).json()['response']['items']
-        photos = [(item['likes']['count'], item['sizes'][-1]['url']) for item in photos_json]
-        return photos
+        try:
+            photos_json = requests.get(self.photos_get_url,
+                                       params={**self.params, **json_params}).json()['response']['items']
+        except KeyError:
+            pass
+        else:
+            photos = [(item['likes']['count'], item['sizes'][-1]['url']) for item in photos_json]
+            return photos
 
     def get_suitable(self, my_params):
         """ Сбор информации по подходящим людям:
@@ -81,17 +85,14 @@ class VK_data:
         }
         users = requests.get(url=self.users_search_url,
                              params={**self.params, **json_params, **my_params}).json()['response']['items']
-        # user_info = [{'first_name': item['first_name'],
-        #               'last_name': item['last_name'],
-        #               'photo': my_data.get_photos(owner_id=item['id'])}
-        #              for item in users]  <<< не работает, выдает KeyError: response .....
-
-        for item in users:                 # <<<<<<<<< работает!!.....
+        user_info = []
+        for item in users:
             if item['is_friend'] == 0:
                 first_name = item['first_name']
                 last_name = item['last_name']
                 photo_info = my_data.get_photos(item['id'])
-                return first_name, last_name, photo_info
+                user_info.append((first_name, last_name, photo_info))
+        return user_info
 
 
 with open('vk_token.txt') as file:
